@@ -7,4 +7,5 @@ import random
 
 def euler_step(h, x_t, dx_dt):
     x_t_plus_h = x_t + h*dx_dt
+    print(x_t, x_t_plus_h)
     return x_t_plus_h
