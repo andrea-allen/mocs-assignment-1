@@ -3,76 +3,83 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-#S init 90
-#I init 10
-#TODO alter so that it runs in increments of h_step_size UNTIL reaching T=50
-#TODO plot distance between functions
+
 def SIS_euler(N, gamma, beta, step_size_h, steps):
-    S_vec = []
-    I_vec = []
-    S = 90
-    I = 10
-    #At time t+1, S = euler_step()
-    S_vec=[S]
-    I_vec=[I]
+    S_current = 90
+    I_current = 10
+    S_vec=[S_current]
+    I_vec=[I_current]
     time = 0
     time_vec = [0]
 
-    for t in range(1, math.floor(steps/step_size_h)):
-        print(S, I, S+I)
-        I_vec.append(euler_steps.euler_step(step_size_h, I, dI_dt(S, I, gamma, beta)))
-        S_vec.append(euler_steps.euler_step(step_size_h, S, dS_dt(S, I, gamma, beta)))
-        S=S_vec[t]
-        I=I_vec[t]
-        time += step_size_h
-        time_vec.append(time)
-    plt.plot(time_vec, I_vec)
-    # plt.show()
+    try:
+        for t in range(1, math.floor(steps/step_size_h)):
+            dI_dt_current = dI_dt(S_current, I_current, gamma, beta)
+            I_plus_t = euler_steps.euler_step(step_size_h, I_current, dI_dt_current)
+            I_vec.append(I_plus_t)
+            S_vec.append(N-I_plus_t)
+            S_current=S_vec[-1]
+            I_current=I_vec[-1]
+            time += step_size_h
+            time_vec.append(time)
+    except OverflowError:
+        if len(I_vec) > len(time_vec):
+            I_vec.pop(-1)
+    if (True in np.isinf(I_vec)):
+        I_vec = I_vec[:np.where(np.isinf(I_vec))[0][0]]
+    if (True in np.isnan(I_vec)):
+        I_vec = I_vec[:np.where(np.isnan(I_vec))[0][0]]
+    time_vec = time_vec[:len(I_vec)]
+    plt.scatter(time_vec, I_vec, label='Euler')
+    plt.plot(time_vec, I_vec, label='Euler')
+    plt.legend(loc='lower right')
+    print(I_vec)
     return I_vec
 
 def SIS_heun(N, gamma, beta, step_size_h, steps):
-    S_vec = np.zeros(steps)
-    I_vec = np.zeros(steps)
-    S = 90
-    I = 10
-    #At time t+1, S = euler_step()
-    S_vec=[S]
-    I_vec=[I]
+    S_current = 90
+    I_current = 10
+    S_vec=[S_current]
+    I_vec=[I_current]
+    I_vec_E = [I_current]
     time = 0
     time_vec = [0]
-
-    for t in range(1, math.floor(steps/step_size_h)):
-        print(S, I, S+I)
-        I_x_t_e = euler_steps.euler_step(step_size_h, I, dI_dt(S, I, gamma, beta))
-        S_x_t_e = euler_steps.euler_step(step_size_h, S, dS_dt(S, I, gamma, beta))
-        I_vec.append(heun_step(step_size_h, I, dI_dt(S, I, gamma, beta), I_x_t_e, "I", S, I, gamma, beta))
-        S_vec.append(heun_step(step_size_h, S, dS_dt(S, I, gamma, beta), S_x_t_e, "S", S, I, gamma, beta))
-        S=S_vec[t]
-        I=I_vec[t]
-        time += step_size_h
-        time_vec.append(time)
-    plt.plot(time_vec, I_vec)
-    # plt.show()
+    difference_vec = [0]
+    try:
+        for t in range(1, math.floor(steps/step_size_h)):
+            dI_dt_current = dI_dt(S_current, I_current, gamma, beta)
+            I_t_plus_h_eu = euler_steps.euler_step(step_size_h, I_current, dI_dt_current)
+            S_t_plus_h_eu = N - I_t_plus_h_eu
+            dI_dt_Eu_t_plus_h = dI_dt(S_t_plus_h_eu, I_t_plus_h_eu, gamma, beta)
+            I_t_plus_h_Hu = euler_steps.heun_step(step_size_h, I_current, dI_dt_current, dI_dt_Eu_t_plus_h)
+            I_vec.append(I_t_plus_h_Hu)
+            S_vec.append(N - I_t_plus_h_Hu)
+            S_current=S_vec[-1]
+            I_current=I_vec[-1]
+            time += step_size_h
+            time_vec.append(time)
+            difference_vec.append(abs(I_vec[-1]-I_vec_E[-1]))
+    except TypeError or OverflowError:
+        if len(I_vec_E)>len(time_vec):
+            I_vec_E.pop(-1)
+        if len(I_vec) > len(time_vec):
+            I_vec.pop(-1)
+    if (True in np.isinf(I_vec)):
+        I_vec = I_vec[:np.where(np.isinf(I_vec))[0][0]]
+    if (True in np.isnan(I_vec)):
+        I_vec = I_vec[:np.where(np.isnan(I_vec))[0][0]]
+    if (step_size_h==2):
+        print(step_size_h)
+    time_vec = time_vec[:len(I_vec)]
+    print(I_vec)
+    plt.scatter(time_vec, I_vec, label='Heun')
+    plt.plot(time_vec, I_vec, label='Heun')
+    plt.legend(loc='lower right')
+    plt.xlabel('Time t=0 to T=50/h')
+    plt.ylabel('I(t): Number Infected at time t')
     return I_vec
 
-def dS_dt(S_t, I_t, gamma, beta):
-    dS = -int(np.round(beta*S_t*I_t))+int(np.round(gamma*I_t))
-    return dS
-
 def dI_dt(S_t, I_t, gamma, beta):
-    dI = int(np.round(beta*S_t*I_t))-int(np.round(gamma*I_t))
+    dI = beta*(S_t*I_t)-gamma*I_t
     return dI
 
-def heun_step(h, x_t, dx_dt, x_t_e, rate_type_var, S_t, I_t, gamma, beta):
-    #TODO work in progress
-    x_t_plus_h_Hn = 0
-    # x_t_e = euler_steps.euler_step(h, x_t, dx_dt)
-    if rate_type_var=="I":
-        dx_dt_e = dI_dt(S_t, x_t_e, gamma, beta)
-    if rate_type_var=="S":
-        dx_dt_e = dS_dt(x_t_e, I_t, gamma, beta)
-    #get dx of euler_step(h,x_t, dx_dt)
-    #  by treating euler_step() as X_t and computing dS_dt or dI_dt for that value
-    #dx_dt_e = dx of euler_step(h,x_t, dx_dt)
-    x_t_plus_h_Hn = x_t + h*((dx_dt+dx_dt_e)/2)
-    return x_t_plus_h_Hn
