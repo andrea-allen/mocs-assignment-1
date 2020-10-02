@@ -1,24 +1,27 @@
 import euler_steps
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 #S init 90
 #I init 10
+#TODO alter so that it runs in increments of h_step_size UNTIL reaching T=50
+#TODO plot distance between functions
 def SIS_euler(N, gamma, beta, step_size_h, steps):
-    S_vec = np.zeros(steps)
-    I_vec = np.zeros(steps)
+    S_vec = []
+    I_vec = []
     S = 90
     I = 10
     #At time t+1, S = euler_step()
-    S_vec[0]=S
-    I_vec[0]=I
+    S_vec=[S]
+    I_vec=[I]
     time = 0
     time_vec = [0]
 
-    for t in range(1, steps):
+    for t in range(1, math.floor(steps/step_size_h)):
         print(S, I, S+I)
-        I_vec[t] = euler_steps.euler_step(step_size_h, I, dI_dt(S, I, gamma, beta))
-        S_vec[t] = euler_steps.euler_step(step_size_h, S, dS_dt(S, I, gamma, beta))
+        I_vec.append(euler_steps.euler_step(step_size_h, I, dI_dt(S, I, gamma, beta)))
+        S_vec.append(euler_steps.euler_step(step_size_h, S, dS_dt(S, I, gamma, beta)))
         S=S_vec[t]
         I=I_vec[t]
         time += step_size_h
@@ -33,17 +36,17 @@ def SIS_heun(N, gamma, beta, step_size_h, steps):
     S = 90
     I = 10
     #At time t+1, S = euler_step()
-    S_vec[0]=S
-    I_vec[0]=I
+    S_vec=[S]
+    I_vec=[I]
     time = 0
     time_vec = [0]
 
-    for t in range(1, steps):
+    for t in range(1, math.floor(steps/step_size_h)):
         print(S, I, S+I)
         I_x_t_e = euler_steps.euler_step(step_size_h, I, dI_dt(S, I, gamma, beta))
         S_x_t_e = euler_steps.euler_step(step_size_h, S, dS_dt(S, I, gamma, beta))
-        I_vec[t] = heun_step(step_size_h, I, dI_dt(S, I, gamma, beta), I_x_t_e, "I", S, I, gamma, beta)
-        S_vec[t] = heun_step(step_size_h, S, dS_dt(S, I, gamma, beta), S_x_t_e, "S", S, I, gamma, beta)
+        I_vec.append(heun_step(step_size_h, I, dI_dt(S, I, gamma, beta), I_x_t_e, "I", S, I, gamma, beta))
+        S_vec.append(heun_step(step_size_h, S, dS_dt(S, I, gamma, beta), S_x_t_e, "S", S, I, gamma, beta))
         S=S_vec[t]
         I=I_vec[t]
         time += step_size_h
